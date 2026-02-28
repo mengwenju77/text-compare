@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业文本比对工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- jsdiff -->
+    <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
+    <!-- Lucide Icons (as a script for easy use) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .diff-line {
+            display: flex;
+            min-height: 1.5rem;
+            line-height: 1.5rem;
+        }
+        
+        .diff-line-number {
+            width: 3rem;
+            flex-shrink: 0;
+            text-align: right;
+            padding-right: 0.75rem;
+            color: #94a3b8;
+            user-select: none;
+            border-right: 1px solid #e2e8f0;
+            background-color: #f1f5f9;
+        }
+        
+        .diff-content {
+            flex-grow: 1;
+            padding-left: 0.75rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .added { background-color: #dcfce7; }
+        .added-highlight { background-color: #bbf7d0; }
+        .removed { background-color: #fee2e2; }
+        .removed-highlight { background-color: #fecaca; }
+        .unchanged { background-color: transparent; }
+
+        .line-added .diff-line-number { background-color: #dcfce7; color: #166534; border-right-color: #bbf7d0; }
+        .line-removed .diff-line-number { background-color: #fee2e2; color: #991b1b; border-right-color: #fecaca; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        function App() {
+            const [text1, setText1] = useState('Hello World!\n这是一个简单的文本比对工具。\n你可以修改这里的文字进行对比。');
+            const [text2, setText2] = useState('Hello React!\n这是一个专业的文本比对工具。\n你可以修改这里的文字来查看差异！');
+            const [viewMode, setViewMode] = useState('side-by-side'); // 'side-by-side' or 'unified'
+            const [diffResult, setDiffResult] = useState([]);
+
+            const compare = () => {
+                const diff = Diff.diffLines(text1, text2);
+                setDiffResult(diff);
+            };
+
+            useEffect(() => {
+                compare();
+            }, [text1, text2]);
+
+            const handleClear = (type) => {
+                if (type === 1) setText1('');
+                else setText2('');
+            };
+
+            const handlePaste = async (type) => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (type === 1) setText1(text);
+                    else setText2(text);
+                } catch (err) {
+                    console.error('Failed to paste: ', err);
+                }
+            };
+
+            const renderSideBySide = () => {
+                const lines1 = [];
+                const lines2 = [];
+                
+                let lineNum1 = 1;
+                let lineNum2 = 1;
+
+                diffResult.forEach((part) => {
+                    const lines = part.value.split('\n');
+                    if (lines[lines.length - 1] === '') lines.pop();
+
+                    if (part.added) {
+                        lines.forEach(line => {
+                            lines2.push({ content: line, type: 'added', num: lineNum2++ });
+                            lines1.push({ content: '', type: 'empty', num: '' });
+                        });
+                    } else if (part.removed) {
+                        lines.forEach(line => {
+                            lines1.push({ content: line, type: 'removed', num: lineNum1++ });
+                            lines2.push({ content: '', type: 'empty', num: '' });
+                        });
+                    } else {
+                        lines.forEach(line => {
+                            lines1.push({ content: line, type: 'unchanged', num: lineNum1++ });
+                            lines2.push({ content: line, type: 'unchanged', num: lineNum2++ });
+                        });
+                    }
+                });
+
+                return (
+                    <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <div className="bg-white">
+                            <div className="bg-slate-50 border-b border-slate-200 p-2 text-sm font-medium text-slate-500 text-center">原始文本 (OLD)</div>
+                            <div className="mono text-sm overflow-x-auto">
+                                {lines1.map((line, i) => (
+                                    <div key={i} className={`diff-line ${line.type === 'removed' ? 'line-removed removed' : line.type === 'empty' ? 'bg-slate-50' : ''}`}>
+                                        <div className="diff-line-number">{line.num}</div>
+                                        <div className="diff-content">{line.content}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-white">
+                            <div className="bg-slate-50 border-b border-slate-200 p-2 text-sm font-medium text-slate-500 text-center">新文本 (NEW)</div>
+                            <div className="mono text-sm overflow-x-auto">
+                                {lines2.map((line, i) => (
+                                    <div key={i} className={`diff-line ${line.type === 'added' ? 'line-added added' : line.type === 'empty' ? 'bg-slate-50' : ''}`}>
+                                        <div className="diff-line-number">{line.num}</div>
+                                        <div className="diff-content">{line.content}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderUnified = () => {
+                let lineNum1 = 1;
+                let lineNum2 = 1;
+
+                return (
+                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm mono text-sm overflow-x-auto">
+                        {diffResult.map((part, i) => {
+                            const lines = part.value.split('\n');
+                            if (lines[lines.length - 1] === '') lines.pop();
+
+                            return lines.map((line, j) => {
+                                const type = part.added ? 'added' : part.removed ? 'removed' : 'unchanged';
+                                const n1 = part.added ? '' : lineNum1++;
+                                const n2 = part.removed ? '' : lineNum2++;
+
+                                return (
+                                    <div key={`${i}-${j}`} className={`diff-line ${type === 'added' ? 'line-added added' : type === 'removed' ? 'line-removed removed' : ''}`}>
+                                        <div className="diff-line-number w-12">{n1}</div>
+                                        <div className="diff-line-number w-12">{n2}</div>
+                                        <div className="diff-content">
+                                            <span className="inline-block w-4 text-slate-400 select-none">
+                                                {part.added ? '+' : part.removed ? '-' : ' '}
+                                            </span>
+                                            {line}
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })}
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <header className="mb-8 text-center">
+                        <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center justify-center gap-2">
+                            <span className="bg-blue-600 text-white p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 16v5h-5"/><path d="M3 16v5h5"/><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12 7v2"/><path d="M12 15v2"/><path d="M7 12h2"/><path d="M15 12h2"/></svg>
+                            </span>
+                            文本比对工具
+                        </h1>
+                        <p className="text-slate-500">专业级文本差异分析与高亮显示</p>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        {/* Input 1 */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <span className="text-sm font-semibold text-slate-700">原始文本</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handlePaste(1)} className="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors">粘贴</button>
+                                    <button onClick={() => handleClear(1)} className="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors">清空</button>
+                                </div>
+                            </div>
+                            <textarea 
+                                className="w-full h-64 p-4 mono text-sm focus:outline-none resize-none"
+                                value={text1}
+                                onChange={(e) => setText1(e.target.value)}
+                                placeholder="请输入或粘贴原始文本..."
+                            />
+                        </div>
+
+                        {/* Input 2 */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <span className="text-sm font-semibold text-slate-700">对比文本</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handlePaste(2)} className="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors">粘贴</button>
+                                    <button onClick={() => handleClear(2)} className="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100 transition-colors">清空</button>
+                                </div>
+                            </div>
+                            <textarea 
+                                className="w-full h-64 p-4 mono text-sm focus:outline-none resize-none"
+                                value={text2}
+                                onChange={(e) => setText2(e.target.value)}
+                                placeholder="请输入或粘贴对比文本..."
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-semibold text-slate-800">对比结果</h2>
+                            <div className="flex bg-slate-200 p-1 rounded-lg">
+                                <button 
+                                    onClick={() => setViewMode('side-by-side')}
+                                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'side-by-side' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                >
+                                    并排视图
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('unified')}
+                                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'unified' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                >
+                                    合并视图
+                                </button>
+                            </div>
+                        </div>
+
+                        {viewMode === 'side-by-side' ? renderSideBySide() : renderUnified()}
+                    </div>
+
+                    <footer className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm">
+                        专业文本比对工具 &copy; 2026 - 基于 React + Tailwind CSS
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "text-compare",
+  "version": "1.0.0",
+  "description": "Professional text comparison tool",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'This is a static site. Open index.html in a browser.'"
+  }
+}

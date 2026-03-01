@@ -1,8 +1,4 @@
 {
-  "buildConfig": {
-    "buildCommand": "",
-    "outputDirectory": "."
-  },
   "headers": [
     {
       "source": "**/*.html",

@@ -20,7 +20,7 @@ jobs:
       - name: Deploy to EdgeOne Pages
         # 使用 npx 直接运行 edgeone cli 进行部署
         # -n 指定项目名称，-t 指定 API Token
-        # 部署 ./dist 目录
-        run: npx edgeone pages deploy ./dist -n text-compare -t ${{ secrets.EDGEONE_API_TOKEN }}
+        # 部署当前目录 (.)
+        run: npx edgeone pages deploy . -n text-compare -t ${{ secrets.EDGEONE_API_TOKEN }}
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}

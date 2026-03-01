@@ -22,6 +22,26 @@
 1. 下载或克隆本项目。
 2. 在浏览器中直接打开 `index.html` 即可开始使用。
 
+## 部署到 EdgeOne (腾讯云)
+
+本项目已集成腾讯云 EdgeOne Pages 的自动部署流程。
+
+### **方案 A：GitHub Actions 自动部署 (推荐)**
+
+1.  在腾讯云控制台获取 **EdgeOne API Token**。
+2.  在 GitHub 仓库的 **Settings > Secrets and variables > Actions** 中添加一个名为 `EDGEONE_API_TOKEN` 的 Secret。
+3.  每次向 `main` 分支推送代码时，都会自动触发 GitHub Actions 部署到 EdgeOne。
+
+### **方案 B：EdgeOne Pages 控制台部署**
+
+1.  登录 [腾讯云 EdgeOne 控制台](https://console.cloud.tencent.com/edgeone)。
+2.  进入 **站点管理 > Pages**，点击 **创建项目**。
+3.  选择 **导入 Git 仓库**，连接你的 GitHub 账号并选择此项目。
+4.  配置项目设置：
+    -   **构建命令**：(保持为空)
+    -   **产物目录**：`.` (或者直接输入 `/`)
+5.  点击 **开始部署**。
+
 ## 许可证
 
 MIT License

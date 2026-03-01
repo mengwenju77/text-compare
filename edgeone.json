@@ -1,0 +1,17 @@
+{
+  "buildConfig": {
+    "buildCommand": "",
+    "outputDirectory": "."
+  },
+  "headers": [
+    {
+      "source": "**/*.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+}
